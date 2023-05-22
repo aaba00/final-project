@@ -3,24 +3,74 @@
 
 <head>
     <meta charset="utf-8">
-    <title>[title]</title>
+    <title> EJ and LL97 </title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
     <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
     <link href="css/styles.css" rel="stylesheet">
 </head>
 
 <body>
-    <nav id="menu"></nav>
     <div id="map"></div>
+
+    <div id="buttonbar" class="btn-group">
+        <button id="option1" type="button" class="btn" onclick="buttonbar_click(this.id)">All Buildings/Clear
+            Map</button>
+        <button id="option2" type="button" class="btn" onclick="buttonbar_click(this.id)">High-Emitters</button>
+        <button id="option3" type="button" class="btn" onclick="buttonbar_click(this.id)">Mid-Emitters</button>
+        <button id="option4" type="button" class="btn" onclick="buttonbar_click(this.id)">Low-Emitters</button>
+        <button id="option5" type="button" class="btn" onclick="buttonbar_click(this.id)">No Emissions Data</button>
+    </div>
+
     <div id='console'>
-        <h1>placeholder text</h1>
-        <button type="button" class="btn btn-secondary btn-lg">Light</button>
+        <h1>environmental justice + local law 97</h1>
+        <h2> mapping large multifamily residential buildings, relative 2021 emissions, and nyc ej areas </h2>
+        <p><em>click the buttons at the top of the window to view the
+                buildings.</em>
+        </p>
+        <p> passed in 2019, local law 97 mandates emissions reductions for most buiidlings in new york city that are
+            25,000 sq ft or over. almost 70% of these buildings are mutlifamily residential complexes.
+        </p>
+        <p>
+            while reducing emissions benefits the environment, it is key to ensure that environmental justice
+            communities (defined as<a href="https://climate.cityofnewyork.us/topic/environmental-justice/">
+                communities
+                that are more vulnerable to potential environmental injustices</a>) do not bear undue costs from
+            building retrofits.
+        </p>
+        <p>this map provides a starting point for analysis by mapping residential buildings covered by local law 97
+            and
+            their relative emissions. emissions are approximated by energy use intensity, which measures the amount
+            of
+            energy a buidlings uses per square foot.
+        </p>
+        <h3> deviation in building energy use intensity, 2021 (compared to similar buidlings nationally)</h3>
+        <div id="legend"></div>
+        <p> source: <a
+                href="https://data.cityofnewyork.us/Environment/Energy-and-Water-Data-Disclosure-for-Local-Law-84-/7x5e-2fxh">energy
+                and water data disclosure for local law 84 2022</a>
+        </p>
+        <h3> gray areas: nyc environmental justice areas + potential areas </h3>
+        <p> source: <a
+                href="https://data.cityofnewyork.us/City-Government/Environmental-Justice-Area-Census-Tract-Designatio/ircm-rcjd">environmental
+                justice area census tract designation</a>
+        </p>
+
     </div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
     <script src="js/scripts.js"></script>
-
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>

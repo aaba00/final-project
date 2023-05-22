@@ -1,4 +1,9 @@
 // cluster code adapted from: https://docs.mapbox.com/mapbox-gl-js/example/cluster-html/
+// adapted with bootstrap buttons and code from https://stackoverflow.com/questions/19463651/how-to-change-the-class-of-an-html-button-at-runtime-on-its-click-event to toggle between different data types
+
+/*  -----  */
+/*  SET UP */
+/*  -----  */
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiYWFiYTAwIiwiYSI6ImNsZzVxaWltcTA1dnczaHFyc3NrZXc4N20ifQ.HHHdXxGVb4zlQcNg1CwEZg';
 
@@ -9,15 +14,55 @@ const map = new mapboxgl.Map({
   zoom: 10
 });
 
+/*       -----       */
+/* INITIAL VARIABLES */
+/*       -----       */
 
-// filters for classifying earthquakes into five categories based on magnitude
+// filters for classifying buildings into four categories based on their levels of emissions, compared to the national median value for similar building types
 const highEmitters = ['>', ['get', 'percent_diff'], 10];
 const midEmitters = ['all', ['!=', ['get', 'percent_diff'], 0], ['>=', ['get', 'percent_diff'], -10], ['<=', ['get', 'percent_diff'], 10]];
 const lowEmitters = ['<', ['get', 'percent_diff'], -10];
 const noData = ['==', ['get', 'percent_diff'], 0];
+const layerNames = [
+  'High Emitters (> 10%)',
+  'Mid-Range Emitters (-10% - 10%)',
+  'Low Emitters (< -10%)',
+  'No Emissions Data'
+];
 
 // colors to use for the categories
 const colors = ['#d01c8b', '#f1b6da', '#4dac26', '#adadc9'];
+
+// objects for caching and keeping track of HTML marker objects
+const markers = {};
+let markersOnScreen = {};
+
+// keeping track of active button
+var activeButton = "";
+
+/*  -----  */
+/* LEGENDS */
+/*  -----  */
+// from https://docs.mapbox.com/help/tutorials/choropleth-studio-gl-pt-2/
+const legend = document.getElementById('legend');
+
+layerNames.forEach((layer, i) => {
+  const color = colors[i];
+  const item = document.createElement('div');
+  const key = document.createElement('span');
+  key.className = 'legend-key';
+  key.style.backgroundColor = color;
+
+  const value = document.createElement('span');
+  value.innerHTML = `${layer}`;
+  item.appendChild(key);
+  item.appendChild(value);
+  legend.appendChild(item);
+});
+
+/*  -----  */
+/* MAPPING */
+/*  -----  */
 
 map.on('load', () => {
   map.addSource('EJareas', {
@@ -30,6 +75,7 @@ map.on('load', () => {
     'type': 'fill',
     'source': 'EJareas',
     'paint': {
+      'fill-color': '#c5c6d0',
     }
   });
 
@@ -40,7 +86,7 @@ map.on('load', () => {
     'cluster': true,
     'clusterRadius': 100,
     'clusterProperties': {
-      // keep separate counts for each magnitude category in a cluster
+      // keep separate counts for each emissions category in a cluster
       'highEmitters': ['+', ['case', highEmitters, 1, 0]],
       'midEmitters': ['+', ['case', midEmitters, 1, 0]],
       'lowEmitters': ['+', ['case', lowEmitters, 1, 0]],
@@ -54,6 +100,9 @@ map.on('load', () => {
     'type': 'circle',
     'source': 'buildingsCluster',
     'filter': ['!=', 'cluster', true],
+    'layout': {
+      'visibility': 'none'
+    },
     'paint': {
       'circle-color': [
         'case',
@@ -71,7 +120,7 @@ map.on('load', () => {
 
   });
 
-  //add unclustered data source for buidligns
+  //add unclustered data source for buildings
   map.addSource('buildings', {
     'type': 'geojson',
     'data': 'data/2021_energy_multifamily.geojson',
@@ -84,9 +133,11 @@ map.on('load', () => {
     'source': 'buildings',
     'filter': highEmitters,
     'layout': {
-      'visibility': 'visible'
+      'visibility': 'none'
     },
     'paint': {
+      'circle-stroke-color': "black",
+      "circle-stroke-width": 0.5,
       'circle-color': colors[0],
       'circle-radius': 2
     }
@@ -99,9 +150,11 @@ map.on('load', () => {
     'source': 'buildings',
     'filter': midEmitters,
     'layout': {
-      'visibility': 'visible'
+      'visibility': 'none'
     },
     'paint': {
+      'circle-stroke-color': "black",
+      "circle-stroke-width": 0.5,
       'circle-color': colors[1],
       'circle-radius': 2
     }
@@ -114,9 +167,11 @@ map.on('load', () => {
     'source': 'buildings',
     'filter': lowEmitters,
     'layout': {
-      'visibility': 'visible'
+      'visibility': 'none'
     },
     'paint': {
+      'circle-stroke-color': "black",
+      "circle-stroke-width": 0.5,
       'circle-color': colors[2],
       'circle-radius': 2
     }
@@ -129,55 +184,114 @@ map.on('load', () => {
     'source': 'buildings',
     'filter': noData,
     'layout': {
-      'visibility': 'visible'
+      'visibility': 'none'
     },
     'paint': {
+      'circle-stroke-color': "black",
+      "circle-stroke-width": 0.5,
       'circle-color': colors[3],
       'circle-radius': 2
     }
   });
 
-  // objects for caching and keeping track of HTML marker objects (for performance)
-  const markers = {};
-  let markersOnScreen = {};
-
-  function updateMarkers() {
-    const newMarkers = {};
-    const features = map.querySourceFeatures('buildingsCluster');
-
-    // for every cluster on the screen, create an HTML marker for it (if we didn't yet),
-    // and add it to the map if it's not there already
-    for (const feature of features) {
-      const coords = feature.geometry.coordinates;
-      const props = feature.properties;
-      if (!props.cluster) continue;
-      const id = props.cluster_id;
-
-      let marker = markers[id];
-      if (!marker) {
-        const el = createDonutChart(props);
-        marker = markers[id] = new mapboxgl.Marker({
-          element: el
-        }).setLngLat(coords);
-      }
-      newMarkers[id] = marker;
-
-      if (!markersOnScreen[id]) marker.addTo(map);
+  map.on('zoom', () => {
+    if (activeButton == "option1") {
+      updateMarkers();
     }
-    // for every marker we've added previously, remove those that are no longer visible
-    for (const id in markersOnScreen) {
-      if (!newMarkers[id]) markersOnScreen[id].remove();
-    }
-    markersOnScreen = newMarkers;
-  }
-
-  // after the GeoJSON data is loaded, update markers on the screen on every frame
-  map.on('render', () => {
-    if (!map.isSourceLoaded('buildingsCluster')) return;
-    updateMarkers();
   });
 });
 
+
+/*      -----       */
+/* HELPER FUNCTIONS */
+/*      -----       */
+
+//changing the layer when clicking button
+function buttonbar_click(clicked) {
+  activeButton = clicked;
+  if (clicked == "option1") {
+    updateMarkers();
+    map.setLayoutProperty('buildingsPoints_high', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_mid', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_low', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_noData', 'visibility', 'none');
+    map.setLayoutProperty('buildingsCluster_single', 'visibility', 'visible');
+  };
+
+  if (clicked == "option2") {
+    map.setLayoutProperty('buildingsPoints_high', 'visibility', 'visible');
+    map.setLayoutProperty('buildingsPoints_mid', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_low', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_noData', 'visibility', 'none');
+    map.setLayoutProperty('buildingsCluster_single', 'visibility', 'none');
+    for (const id in markersOnScreen) {
+      markersOnScreen[id].remove();
+    }
+  };
+
+  if (clicked == "option3") {
+    map.setLayoutProperty('buildingsPoints_high', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_mid', 'visibility', 'visible');
+    map.setLayoutProperty('buildingsPoints_low', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_noData', 'visibility', 'none');
+    map.setLayoutProperty('buildingsCluster_single', 'visibility', 'none');
+    for (const id in markersOnScreen) {
+      markersOnScreen[id].remove();
+    }
+  };
+
+  if (clicked == "option4") {
+    map.setLayoutProperty('buildingsPoints_high', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_mid', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_low', 'visibility', 'visible');
+    map.setLayoutProperty('buildingsPoints_noData', 'visibility', 'none');
+    map.setLayoutProperty('buildingsCluster_single', 'visibility', 'none');
+    for (const id in markersOnScreen) {
+      markersOnScreen[id].remove();
+    }
+  };
+
+  if (clicked == "option5") {
+    map.setLayoutProperty('buildingsPoints_high', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_mid', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_low', 'visibility', 'none');
+    map.setLayoutProperty('buildingsPoints_noData', 'visibility', 'visible');
+    map.setLayoutProperty('buildingsCluster_single', 'visibility', 'none');
+    for (const id in markersOnScreen) {
+      markersOnScreen[id].remove();
+    }
+  };
+}
+
+function updateMarkers() {
+  const newMarkers = {};
+  const features = map.querySourceFeatures('buildingsCluster');
+
+  // for every cluster on the screen, create an HTML marker for it (if we didn't yet),
+  // and add it to the map if it's not there already
+  for (const feature of features) {
+    const coords = feature.geometry.coordinates;
+    const props = feature.properties;
+    if (!props.cluster) continue;
+    const id = props.cluster_id;
+
+    let marker = markers[id];
+    if (!marker) {
+      const el = createDonutChart(props);
+      marker = markers[id] = new mapboxgl.Marker({
+        element: el
+      }).setLngLat(coords);
+    }
+    newMarkers[id] = marker;
+
+    if (!markersOnScreen[id]) marker.addTo(map);
+  }
+  // for every marker added previously, remove those that are no longer visible
+  for (const id in markersOnScreen) {
+    if (!newMarkers[id]) markersOnScreen[id].remove();
+  }
+  markersOnScreen = newMarkers;
+}
 
 // functions for creating an SVG donut chart from feature properties
 function createDonutChart(props) {
@@ -212,7 +326,7 @@ function createDonutChart(props) {
       colors[i]
     );
   }
-  html += `<circle cx="${r}" cy="${r}" r="${r0}" fill="white" opacity="0.3" />
+  html += `<circle cx="${r}" cy="${r}" r="${r0}" fill="white" opacity="0.6" />
 <text dominant-baseline="central" transform="translate(${r}, ${r})">
 ${total.toLocaleString()}
 </text>

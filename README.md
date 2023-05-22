@@ -1,7 +1,12 @@
-# class 5 map, updated from class 4
+# environmental justice + local law 97
 
-Map of nyc that displays clusters of 311 reports related to people experiencing homelessness, filtered by year. The slider updates the filter on the data, allowing for a different year of data to be displayed on the map.
+A map that visualizes all multifamily residential buildings that are subject to New York City's Local Law 97 (2019). Buildings are classified by their relative emissions compared to similar buildings nationally: high (at least 10% more intense energy use), low (at least 10% less intense energy use), and mid-range (between 10% more and 10% less). 
 
-This map is one stage of a larger idea. Eventually, I hope to visualize homelessness reports and some measure of local real estate values. While homelessness is usually more policed in high-income areas, the pandemic presented major shifts in homelessness (including, but not limited to, the type of people that become homeless) and real estate values. This map is meant to capture the evolution of these two phenomena using the time period 2019-2022.
+Users can toggle between a view of all buildings at once (buildings are clustered by proximity and displayed using dynamically-styled pie charts) or specific categories of buildings, by energy use.
 
-live site: https://aaba00.github.io/class-4-map/
+The code for the dynamic pie-chart clusters was adapted from https://docs.mapbox.com/mapbox-gl-js/example/cluster-html/.
+
+The pie-chart code was altered to connect to Bootstrap buttons that are handled using code from https://stackoverflow.com/questions/19463651/how-to-change-the-class-of-an-html-button-at-runtime-on-its-click-event
+
+
+live site: https://aaba00.github.io/final-project/
